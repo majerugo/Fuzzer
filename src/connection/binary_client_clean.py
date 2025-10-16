@@ -145,7 +145,7 @@ class BinaryClient:
         """
         Get the core file path
         :param command: Command to send to the binary process
-        :return: The address of the segmentation fault
+        :return: Tuple of the address of the segmentation fault and if still alive
         Note: Enable verbose to see all the core dumps and the address of the segmentation fault.
         """
 
@@ -171,7 +171,10 @@ class BinaryClient:
             if self.type_input == "stdin":
                 if self.verbose:
                     print("Process is stdin, sending command as input.")
-                p = Popen([pwd + "/" + self.binary_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if self.aslr:
+                    p = Popen([pwd + "/" + self.binary_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, aslr=self.aslr)
+                else:
+                    p = Popen(["setarch", "-R", pwd + "/" + self.binary_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 p.stdin.write(command + b"\n")
                 p.stdin.flush()
             elif self.type_input == "f":
@@ -182,24 +185,48 @@ class BinaryClient:
                 f.close()
                 if self.verbose:
                     print("Process is a file, sending command as argument.")
-                p = Popen([pwd + "/" + self.binary_path, TMP_EXPLOIT_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if self.aslr:
+                    p = Popen([pwd + "/" + self.binary_path, TMP_EXPLOIT_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                else:
+                    p = Popen(["setarch", "-R", pwd + "/" + self.binary_path, TMP_EXPLOIT_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             elif self.type_input == "arg":
                 if b'\x00' in command:
-                    print("[-] Null byte detected in command, cannot write to file.")
-                    return None
+                    print_error("[-] Null byte detected in command for argument input. Cannot proceed.")
+                    return None, False
                 if self.verbose:
                     print("Process is an argument, sending command as argument.")
-                p = Popen([pwd + "/" + self.binary_path, command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                if self.aslr:
+                    p = Popen([pwd + "/" + self.binary_path, command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                else:
+                    if not pwd in self.binary_path:
+                        self.binary_path = pwd + "/" + self.binary_path
+                    print_info(f"Connecting to binary: {self.binary_path} with argument: {command}")
+                    self.p = self.connect()
+                    self.send_request(command, get_return=False)
 
-            ret = p.wait()
+
+            if self.verbose:
+                # out = p.stdout.read()
+                # out = p.read()
+                out = self.receive_response(4096)
+                print_info(f"Process output: {out}")
+            self.p.settimeout(2)
+            ret = self.p.poll(True)
             if self.type_input == "f":
                 os.remove(TMP_EXPLOIT_FILE)
             if self.verbose:
                 print(f"[+] Process exited with return code {ret}, checking for core dump...")
+            if ret is None:
+                self.p.terminate()
+                if self.type_input == "f":
+                    os.remove(TMP_EXPLOIT_FILE)
+                if self.verbose:
+                    print_error("[-] Process is still alive, no segmentation fault detected.")
+                return None, True
             if ret != 139 and ret != -11:
                 if self.verbose:
-                    print(f"[-] No segmentation fault detected for size {len(command)}.")
-                return None
+                    print_error(f"[-] No segmentation fault detected for size {len(command)}.")
+                return None, False
             
             # Read the core dump file
 
@@ -215,8 +242,8 @@ class BinaryClient:
 
                 os.remove(core_files[0])
 
-                return hex(core.fault_addr)
-        return None    
+                return hex(core.fault_addr), False
+        return None, False
 
     ### REQUESTS AND RESPONSES ###
 

@@ -1,0 +1,7 @@
+mode: 'binary'
+binary: 'target/string_bug/ch17'
+process_interactive: false
+type_input: 'stdin'
+verbose: false
+sendline: true
+ASLR: false

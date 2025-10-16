@@ -101,6 +101,9 @@ For general cases, you can use the following options:
     > Used only in binary mode for this moment.
 - `sendline` : whether to use `sendline` (True) or `send` (False) when sending input to the target program.
     > Used only in binary mode for this moment.
+- `flag_format` : regex pattern to find the flag in the stack. For example:
+    - `FLAG{[A-Za-z0-9_]+}` -> will search for strings that match this pattern in the stack.
+    > Used only in string bug exploit for this moment.
 
 
 ### Options for format string bug exploit
@@ -125,26 +128,29 @@ For general cases, you can use the following options:
 python3 tests/testsuite.py 
 ```
 
-### TODO
 
+## TODO
+
+
+### Important todo
 - [X] Setup correctly the delay and remove from string bug.
 - [X] Move interactive process to dispatcher.
 - [X] Move extract_tokens and pattern notion to `dispatcher.py`.
 - [X] Make exploit modular (string bug / bof / ...).
 - [X] Documentation.
-- [X] For example :
-    - `python3 src/main.py --mode binary --binary ./target/bof/ch33` -> ask 2 times to setup type binary and type input.
 - [X] Test on x86_64.
 - [X] Test web and ssh mode.
-- [X] Verbose mode in stringbug.
 - [X] Add ROP blind method in bof_exploit.
 - [X] Need to do a version that without any arguments just fuzz the binary with default config.
-- [X] Need to optimize the code.
-- [X] Need to optimize performance.
-- [X] Print string stack to find FLAG with a template like `FLAG{__EXTRACT__}`. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_format_string_bug_basic_1 => if ASLR disabled or infinite loop with brute force.
-- [X] Env variable address and try to use it if the stack is executable. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_format_string_bug_basic_3 => if stack is executable and (ASLR disabled or infinite loop with brute force).
 - [X] Thanks to the stack base brute force to find our payload address with -> ```payload = p32(starting_address) + b"%__offset__$s\n"``` -> `p32(starting_address) + p32(starting_address) + b'%__offset__$s'` in response https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if stack is executable and (ASLR disabled or infinite loop with brute force).
 - [X] Brute force with the .text base address to find a instruction that change our EIP/RIP. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if PIE disabled or infinite loop with brute force.
+
+### Other todo
+
+- [X] Env variable address and try to use it if the stack is executable. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_format_string_bug_basic_3 => if stack is executable and (ASLR disabled or infinite loop with brute force).
+- [X] Need to optimize the code.
+- [X] Need to optimize performance.
+- [X] Verbose mode in stringbug.
 
 ## Sources
 
