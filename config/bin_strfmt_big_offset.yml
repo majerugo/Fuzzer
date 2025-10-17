@@ -4,4 +4,5 @@ process_interactive: false
 type_input: 'stdin'
 verbose: false
 sendline: true
+strfmt_max_offset: 200
 ASLR: false

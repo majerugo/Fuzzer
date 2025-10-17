@@ -128,6 +128,8 @@ For example:
 - `pattern_payload` : pattern to extract address for get the offset of string bug format. For example:
     - `check at {__IGNORE__} : {__EXTRACT__}` -> will ignore the first token and extract the second one as address.
     > Used only in string bug exploit for this moment.
+- `strfmt_max_offset` : maximum offset to try for finding the format string vulnerability. Default value is `100`.
+    > Used only in string bug exploit for this moment.
 
 ### Options for buffer overflow exploit
 
