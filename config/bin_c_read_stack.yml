@@ -4,5 +4,4 @@ process_interactive: false
 type_input: 'arg'
 verbose: false
 ASLR: false
-# receive_payload_template: "__EXTRACT__"
 flag_format: "FLAG{[A-Za-z0-9_]+}"

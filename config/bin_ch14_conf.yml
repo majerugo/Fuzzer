@@ -4,4 +4,5 @@ process_interactive: false
 type_input: 'arg'
 verbose: false
 ASLR: false
+stack_range: [0xffffb100,0xffffb1a0]
 receive_payload_template: "check at {__IGNORE__}\nargv[1] = [{__IGNORE__}]\nfmt=[{__EXTRACT__}]\ncheck={__IGNORE__}\n"
