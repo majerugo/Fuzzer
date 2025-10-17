@@ -35,20 +35,24 @@ core
 
 #### Binary mode
 
-Find overflow in a binary:
+**Find overflow in a binary:**
 
 ```bash
 python3 src/main.py --mode binary --binary ./target/bof/ch15 --config config/binary_config.yml --verbose
 ```
 And send `ni` and `stdin`.
 
-Exploit string bug in a binary:
+> Overflow at offset 128
+
+**Exploit string bug in a binary:**
 
 ```bash
 python3 src/main.py --mode binary --binary ./target/string_bug/ch14 --config config/bin_ch14_conf.yml --verbose
 ```
 
-Exploit string bug in a binary and try to find flag format:
+> Give a shell
+
+**Exploit string bug in a binary and try to find flag format in the stack:**
 
 ```bash
 python3 src/main.py --mode binary --binary ./target/string_bug/custom_read_stack --config config/bin_c_read_stack.yml
@@ -104,7 +108,16 @@ For general cases, you can use the following options:
 - `flag_format` : regex pattern to find the flag in the stack. For example:
     - `FLAG{[A-Za-z0-9_]+}` -> will search for strings that match this pattern in the stack.
     > Used only in string bug exploit for this moment.
-
+- `stack_range`: range of stack addresses to brute force for finding the eip. Default value is `-1,-1` which means no brute force. Use (0,0) to automatically detect stack range.
+For example:
+    - `0xffca0000-0xffff0000` -> will search in this address range.
+    > Used only in string bug exploit for this moment.
+- `text_range`: range of .text segment addresses to brute force for finding a suitable instruction to redirect execution flow. Default value is `-1,-1` which means no brute force. Use (0,0) to automatically detect .text segment range.
+For example:
+    - `0x08048000-0x08049000` -> will search in this address range.
+    > Used only in string bug exploit for this moment.
+- `timeout` : timeout value in seconds for receiving data from the target program. Default value is `5` seconds.
+    > Used only in binary mode for this moment.
 
 ### Options for format string bug exploit
 

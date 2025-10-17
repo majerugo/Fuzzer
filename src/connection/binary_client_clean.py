@@ -31,6 +31,7 @@ class BinaryClient:
         self.verbose = config.get("verbose", False)
         self.aslr = config.get("ASLR", True)
         self.sendline = config.get("sendline", False)
+        self.timeout = config.get("timeout", 5)
         # Type of binary: True for interactive, False for non-interactive
         self.process_interactive = config.get("process_interactive", None)
         # Type of input: "stdin" for stdin, "f" for file as arg, "arg" for argument, "a" for automatic
@@ -43,7 +44,6 @@ class BinaryClient:
             context.log_level = 'debug'
         else:
             context.log_level = 'error'
-        
         ## CHECKS ##
 
         # Check if the binary path is set
@@ -61,6 +61,11 @@ class BinaryClient:
         # Check if the process_interactive is valid
         if self.process_interactive not in [True, False]:
             raise ValueError("Invalid process_interactive. Must be True (interactive) or False (non-interactive).")
+
+        pwd = os.getcwd()
+        if not pwd in self.binary_path:
+            self.binary_path = pwd + "/" + self.binary_path
+
 
     def aslr_enabled(self) -> bool:
         """
@@ -133,6 +138,7 @@ class BinaryClient:
         self.elf = ELF(self.binary_path)
         if self.type_input != "f" and self.type_input != "arg":
             self.p = process(self.binary_path, aslr=self.aslr)
+            self.p.settimeout(self.timeout)
         else:
             if self.verbose:
                 print("[!] Binary is the type 'f' or 'arg' so no need to connect.")
@@ -159,75 +165,45 @@ class BinaryClient:
         else:
             print_error("[!] Core pattern file not found.")
             raise FileNotFoundError("Core pattern file not found.")
-        
-        pwd = os.getcwd()
 
         ## SEND COMMAND ##
 
         # Run the binary with the command and capture the core dump
         with enable_core_dumps("/tmp"):
 
-            # Send the command to the binary process
-            if self.type_input == "stdin":
+            # Check for null bytes in command for argument input
+            if b'\x00' in command and self.type_input == "arg":
                 if self.verbose:
-                    print("Process is stdin, sending command as input.")
-                if self.aslr:
-                    p = Popen([pwd + "/" + self.binary_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, aslr=self.aslr)
-                else:
-                    p = Popen(["setarch", "-R", pwd + "/" + self.binary_path], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                p.stdin.write(command + b"\n")
-                p.stdin.flush()
-            elif self.type_input == "f":
-                if self.verbose:
-                    print("Creating temporary file for command input.")
-                f = open(TMP_EXPLOIT_FILE, "wb")
-                f.write(command)
-                f.close()
-                if self.verbose:
-                    print("Process is a file, sending command as argument.")
-                if self.aslr:
-                    p = Popen([pwd + "/" + self.binary_path, TMP_EXPLOIT_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
-                    p = Popen(["setarch", "-R", pwd + "/" + self.binary_path, TMP_EXPLOIT_FILE], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            elif self.type_input == "arg":
-                if b'\x00' in command:
                     print_error("[-] Null byte detected in command for argument input. Cannot proceed.")
-                    return None, False
-                if self.verbose:
-                    print("Process is an argument, sending command as argument.")
-                if self.aslr:
-                    p = Popen([pwd + "/" + self.binary_path, command], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                else:
-                    if not pwd in self.binary_path:
-                        self.binary_path = pwd + "/" + self.binary_path
-                    print_info(f"Connecting to binary: {self.binary_path} with argument: {command}")
-                    self.p = self.connect()
-                    self.send_request(command, get_return=False)
-
+                return None, False
 
             if self.verbose:
-                # out = p.stdout.read()
-                # out = p.read()
-                out = self.receive_response(4096)
-                print_info(f"Process output: {out}")
-            self.p.settimeout(2)
-            ret = self.p.poll(True)
-            if self.type_input == "f":
-                os.remove(TMP_EXPLOIT_FILE)
+                print_info(f"Connecting to binary: {self.binary_path} with argument: {command}")
+
+            # Connect and send the command
+            self.connect()
+            ret = self.send_request(command, get_return=True)
+            if self.verbose:
+                print_success(f"[+] Command sent, process returned with code: {ret}")
+
+            # Close the process
+            self.close()
+
             if self.verbose:
                 print(f"[+] Process exited with return code {ret}, checking for core dump...")
+
+            # Check if the process is still alive
             if ret is None:
-                self.p.terminate()
-                if self.type_input == "f":
-                    os.remove(TMP_EXPLOIT_FILE)
                 if self.verbose:
                     print_error("[-] Process is still alive, no segmentation fault detected.")
                 return None, True
+
+            # Check if segmentation fault occurred
             if ret != 139 and ret != -11:
                 if self.verbose:
                     print_error(f"[-] No segmentation fault detected for size {len(command)}.")
                 return None, False
-            
+
             # Read the core dump file
 
             core_files = glob.glob("/tmp/core*")
@@ -243,7 +219,6 @@ class BinaryClient:
                 os.remove(core_files[0])
 
                 return hex(core.fault_addr), False
-        return None, False
 
     ### REQUESTS AND RESPONSES ###
 
@@ -251,6 +226,7 @@ class BinaryClient:
         """
         Send a command to the binary process
         :param command: Command to send to the binary process
+        :param get_return: Whether to get the return code of the process after sending the command
         :return: The return code of the binary process or None if the process is still alive
         """
 
@@ -272,11 +248,13 @@ class BinaryClient:
             if self.verbose:
                 print("Process is a file, sending command as argument.")
             self.p = process([self.binary_path, TMP_EXPLOIT_FILE], aslr=self.aslr)
+            self.p.settimeout(self.timeout)
         # Binary with argument input
         elif self.type_input == "arg":
             if self.verbose:
                 print("Process is an argument, sending command as argument.")
             self.p = process([self.binary_path, command], aslr=self.aslr)
+            self.p.settimeout(self.timeout)
         ## RETURN CODE ##
         if get_return:
             # Check if the process is alive
@@ -299,8 +277,6 @@ class BinaryClient:
                 else:
                     return None
 
-        
-
     def receive_response(self, arg : int | str = 4096) -> bytes | None:
         """
         Receive a response from the binary process
@@ -317,7 +293,7 @@ class BinaryClient:
         else:
             raise ValueError("Argument must be an integer or a string ('line' or any other string to recvuntil).")
         return response
-    
+
     def interactive(self) -> None:
         """
         Start an interactive session with the binary process.

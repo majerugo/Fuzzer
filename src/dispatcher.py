@@ -2,7 +2,7 @@ from connection.ssh_client import SSHClient
 from connection.web_client import WebClient
 from connection.binary_client_clean import BinaryClient
 from tools.pattern_tools import extract_tokens
-from printer import print_info
+from printer import print_info, print_success
 import os
 
 class Dispatcher:
@@ -205,6 +205,37 @@ class Dispatcher:
         else:
             raise ValueError("Client not initialized")
         
+    def find_shell(self, payload:bytes = b"") -> bool:
+        """
+        Check if the binary process is a shell by sending a payload and checking the response.
+        :param payload: The payload to send to the binary process
+        :return: True if the binary process is a shell, False otherwise
+        """
+
+        # If no payload is provided, use a default payload
+        if self.client is None:
+            raise ValueError("Client not initialized")
+        if self.verbose:
+            print("Checking if the binary process is a shell.")
+
+        # Connect and send the payload
+        self.connect()
+        self.send_command(payload, get_return=False)
+        self.receive_response(disable_template=True)
+
+        # Send 'id' command to check for shell
+        self.client.p.send(b"id\nexit\n")
+        data = self.receive_response(disable_template=True)
+
+        # Close the connection
+        self.close()
+
+        # Check if the response contains 'uid=' and 'gid='
+        if data and b"uid=" in data and b"gid=" in data:
+            print_success(f"[+] Find a shell ! With the payload : {payload}.")
+            return True
+        return False
+
     def close(self):
         if self.client:
             self.client.close()
