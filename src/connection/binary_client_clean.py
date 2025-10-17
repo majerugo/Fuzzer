@@ -218,7 +218,7 @@ class BinaryClient:
 
                 os.remove(core_files[0])
 
-                return hex(core.fault_addr), False
+                return hex(core.eip), False
 
     ### REQUESTS AND RESPONSES ###
 

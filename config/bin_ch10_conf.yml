@@ -1,0 +1,6 @@
+mode: binary
+binary: target/bof/ch10
+process_interactive: false
+type_input: f
+sendline: true
+send_payload_template: "USERNAME=__PAYLOAD__"
