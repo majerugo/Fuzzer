@@ -119,6 +119,10 @@ For example:
 - `timeout` : timeout value in seconds for receiving data from the target program. Default value is `5` seconds.
     > Used only in binary mode for this moment.
 
+- `cmd_to_send` : command to send after getting a shell. For example:
+    - `cat /etc/passwd` -> will send this command to the shell after getting it.
+    > Used only in string bug exploit for this moment.
+
 ### Options for format string bug exploit
 
 - `init_instructions` : -> check if it's working (string bug exploit). For example:
@@ -148,25 +152,39 @@ python3 tests/testsuite.py
 
 
 ### Important todo
-- [X] Setup correctly the delay and remove from string bug.
-- [X] Move interactive process to dispatcher.
-- [X] Move extract_tokens and pattern notion to `dispatcher.py`.
-- [X] Make exploit modular (string bug / bof / ...).
-- [X] Documentation.
-- [X] Test on x86_64.
-- [X] Test web and ssh mode.
-- [X] Add ROP blind method in bof_exploit.
-- [X] Need to do a version that without any arguments just fuzz the binary with default config.
-- [X] Thanks to the stack base brute force to find our payload address with -> ```payload = p32(starting_address) + b"%__offset__$s\n"``` -> `p32(starting_address) + p32(starting_address) + b'%__offset__$s'` in response https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if stack is executable and (ASLR disabled or infinite loop with brute force).
-- [X] Brute force with the .text base address to find a instruction that change our EIP/RIP. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if PIE disabled or infinite loop with brute force.
+- [ ] Setup correctly the delay and remove from string bug.
+- [ ] Move interactive process to dispatcher.
+- [ ] Move extract_tokens and pattern notion to `dispatcher.py`.
+- [ ] Make exploit modular (string bug / bof / ...).
+- [ ] Documentation.
+- [ ] Test on x86_64.
+- [ ] Test web and ssh mode.
+- [ ] Add ROP blind method in bof_exploit.
+- [ ] Need to do a version that without any arguments just fuzz the binary with default config.
+- [ ] Thanks to the stack base brute force to find our payload address with -> ```payload = p32(starting_address) + b"%__offset__$s\n"``` -> `p32(starting_address) + p32(starting_address) + b'%__offset__$s'` in response https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if stack is executable and (ASLR disabled or infinite loop with brute force).
+- [ ] Brute force with the .text base address to find a instruction that change our EIP/RIP. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_remote_format_string_bug => if PIE disabled or infinite loop with brute force.
 
 ### Other todo
 
-- [X] Env variable address and try to use it if the stack is executable. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_format_string_bug_basic_3 => if stack is executable and (ASLR disabled or infinite loop with brute force).
-- [X] Need to optimize the code.
-- [X] Need to optimize performance.
-- [X] Verbose mode in stringbug.
+- [ ] Env variable address and try to use it if the stack is executable. https://github.com/majerugo/Rootme/tree/main/app_system/elf_x86_format_string_bug_basic_3 => if stack is executable and (ASLR disabled or infinite loop with brute force).
+- [ ] Need to optimize the code.
+- [ ] Need to optimize performance.
+- [ ] Verbose mode in stringbug.
 
+### Binary solved
+- [X] ch14 string bug exploit.
+> `python3 src/main.py --mode binary --binary ./target/string_bug/ch14 --config config/bin_ch14_conf.yml`
+
+- [X] custom_read_stack string bug exploit read from stack.
+> `python3 src/main.py --mode binary --binary ./target/string_bug/custom_read_stack --config config/bin_c_read_stack.yml`
+
+- [ ] ch10 bof exploit -> need to update the finder for bof offset and add function to exploit writable stack. => This is not prioritized because most of the chall have NX enabled.
+> `python3 src/main.py --mode binary --binary ./target/bof/ch10 --config config/bin_ch10_conf.yml`
+
+- [X] ch15 bof exploit ret2shellcode.
+> `python3 src/main.py --mode binary --binary ./target/bof/ch15 --config config/bin_ch15_conf.yml`
+
+- [ ] ch33
 ## Sources
 
 - [PwntoolsProcess](https://docs.pwntools.com/en/stable/tubes/processes.html)

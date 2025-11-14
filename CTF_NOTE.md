@@ -197,7 +197,7 @@ Need to have acces to `malloc`, `free`, an `read malloced` chunk and an `edit ma
 6. **Overwrite the fd pointer**: Edit the second small chunk to overwrite its fd pointer with the address of `__free_hook` in libc. (offset 6)
 7. **Allocate two small chunks**: Allocate two small chunks of the same size (0x20 bytes). The first allocation will return a normal chunk we will put `/bin/sh` inside to use it after, and the second allocation will return a chunk at the address of `__free_hook`. (offset 8, 9)
 8. **Overwrite `__free_hook`**: Edit the allocated chunk to overwrite `__free_hook` with the address of `system` (calculated using the libc base address)
-9. **Trigger the exploit**: Free the allocated chunk (which contains `/bin/sh`). This will call `system("/bin/sh")`, giving you a shell.
+10. **Trigger the exploit**: Free the second allocated chunk (which contains `/bin/sh`). This will call `system("/bin/sh")`, giving you a shell.
 
 ### Example
 

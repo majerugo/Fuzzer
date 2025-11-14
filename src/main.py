@@ -66,16 +66,24 @@ def main():
 
     print_colored(f"[+] Trying to find buffer overflow...", 'cyan')
 
+    # Buffer Overflow Exploit
     exploit = Exploit(config)
-    bof_index = exploit.run_bof_exploit()
-    if bof_index == -1:
-        print_colored("[-] No buffer overflow detected", 'red')
+    flag_fond, bof_exploit = exploit.run_bof_exploit()
+
+    # Find a buffer overflow
+    if bof_exploit:
+        print_colored(f"[+] Buffer overflow detected", 'green')
     else:
-        print_colored(f"[+] Buffer overflow detected with size: {bof_index}", 'green')
+        print_colored("[-] No buffer overflow detected", 'red')
 
-    print_colored(f"[+] Trying string bug format", 'cyan')
+    # Already found the flag
+    if flag_fond:
+        print_colored(f"[+] Flag found using buffer overflow exploit!", 'green')
 
-    string_bug = exploit.run_string_bug_exploit()
+    # Try Format String Bug Exploit
+    else:
+        print_colored(f"[+] Trying string bug format", 'cyan')
+        exploit.run_string_bug_exploit()
 
     print_colored("[+] Fuzzing completed.", 'green')
 
