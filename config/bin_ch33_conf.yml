@@ -1,0 +1,7 @@
+mode: 'binary'
+binary: 'target/bof/ch33'
+process_interactive: false
+type_input: 'arg'
+ASLR: false
+timeout: 0.25
+cmd_to_send: 'id'

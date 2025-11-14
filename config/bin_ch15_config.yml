@@ -1,0 +1,8 @@
+mode: 'binary'
+binary: 'target/string_bug/ch15'
+process_interactive: false
+type_input: 'stdin'
+timeout: 5
+text_range: [0x08048500,0x08049500]
+sendline: true
+cmd_to_send: 'id'

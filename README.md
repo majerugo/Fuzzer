@@ -184,6 +184,7 @@ python3 tests/testsuite.py
 - [X] ch15 bof exploit ret2shellcode.
 > `python3 src/main.py --mode binary --binary ./target/bof/ch15 --config config/bin_ch15_conf.yml`
 
+- [ ] ch33
 ## Sources
 
 - [PwntoolsProcess](https://docs.pwntools.com/en/stable/tubes/processes.html)

@@ -25,6 +25,7 @@ class BinaryClient:
         ## Process variables ##
         self.p = None
         self.elf = None
+        self.libc = None
 
         ## Parse config
         self.binary_path = config.get("binary", "")
@@ -65,7 +66,8 @@ class BinaryClient:
         pwd = os.getcwd()
         if not pwd in self.binary_path:
             self.binary_path = pwd + "/" + self.binary_path
-
+        # Get libc
+        self.elf = ELF(self.binary_path)
 
     def aslr_enabled(self) -> bool:
         """
@@ -139,6 +141,10 @@ class BinaryClient:
         if self.type_input != "f" and self.type_input != "arg":
             self.p = process(self.binary_path, aslr=self.aslr)
             self.p.settimeout(self.timeout)
+            # if self.libc is None:
+            #     self.libc = ELF(self.p.address_mapping(self.p.libc_mapping().address).path)
+            #     if self.verbose:
+            #         print_info(f"Libc detected: {self.libc.path}")
         else:
             if self.verbose:
                 print("[!] Binary is the type 'f' or 'arg' so no need to connect.")
@@ -200,6 +206,7 @@ class BinaryClient:
 
             # Check if segmentation fault occurred
             if ret != 139 and ret != -11:
+            # if ret >= 0 and ret != 139:
                 if self.verbose:
                     print_error(f"[-] No segmentation fault detected for size {len(command)}.")
                 return None, False
@@ -249,12 +256,20 @@ class BinaryClient:
                 print("Process is a file, sending command as argument.")
             self.p = process([self.binary_path, TMP_EXPLOIT_FILE], aslr=self.aslr)
             self.p.settimeout(self.timeout)
+            # if self.libc is None:
+            #     self.libc = ELF(self.p.address_mapping(self.p.libc_mapping().address).path)
+            #     if self.verbose:
+            #         print_info(f"Libc detected: {self.libc.path}")
         # Binary with argument input
         elif self.type_input == "arg":
             if self.verbose:
                 print("Process is an argument, sending command as argument.")
             self.p = process([self.binary_path, command], aslr=self.aslr)
             self.p.settimeout(self.timeout)
+            # if self.libc is None:
+                # self.libc = ELF(self.p.address_mapping(self.p.libc_mapping().address).path)
+                # if self.verbose:
+                    # print_info(f"Libc detected: {self.libc.path}")
         ## RETURN CODE ##
         if get_return:
             # Check if the process is alive
@@ -268,9 +283,9 @@ class BinaryClient:
             else:
                 if self.verbose:
                     print("Process is still alive")
-
                 if not self.process_interactive:
                     self.p.wait()
+                    self.p.close()
                     if self.type_input == "f":
                         os.remove(TMP_EXPLOIT_FILE)
                     return self.p.returncode
